@@ -1,121 +1,287 @@
-import ERP_DATA from '../data/erpData';
-import { won, wonShort, num, SectionTitle, Card, StatCard, Badge, BarChart, HBars, ChannelDonut } from '../components/ui';
+import { useState, useEffect } from 'react';
+import { won, num, Tabs, Toolbar, Button, Badge, StatusPill } from '../components/ui';
+import {
+    ProductRegisterPopup, VendorRegisterPopup, WarehouseRegisterPopup,
+    BrandRegisterPopup, genCode,
+} from '../components/RegisterPopups';
+import api from '../api/axios';
 
-const D = ERP_DATA;
+export default function Product() {
+    const [tab, setTab] = useState('product');
+    const [products, setProducts] = useState([]);
+    const [vendors, setVendors] = useState([]);
+    const [warehouses, setWarehouses] = useState([]);
+    const [brands, setBrands] = useState([]);
+    const [search, setSearch] = useState('');
+    const [popup, setPopup] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-function stockStatus(item) {
-  if (item.stock === 0) return { tone: "danger", text: "품절" };
-  if (item.stock < item.safety) return { tone: "warn", text: "안전재고 미달" };
-  return { tone: "ok", text: "정상" };
-}
+    useEffect(() => {
+        Promise.all([
+            api.get('/api/products'),
+            api.get('/api/vendors'),
+            api.get('/api/warehouses'),
+            api.get('/api/brands'),
+        ]).then(([p, v, w, b]) => {
+            setProducts(p.data);
+            setVendors(v.data);
+            setWarehouses(w.data);
+            setBrands(b.data);
+        }).finally(() => setLoading(false));
+    }, []);
 
-function expireStatus(item) {
-  const days = D.helpers.daysUntil(item.expire);
-  if (days <= 60) return { tone: "danger", text: `D-${days}` };
-  if (days <= 90) return { tone: "warn", text: `D-${days}` };
-  return null;
-}
+    useEffect(() => { setSearch(''); }, [tab]);
 
-function InventorySection() {
-  const m = D.metrics;
-  return (
-    <section>
-      <SectionTitle
-        kicker="INVENTORY"
-        title="현재고 현황"
-        right={<span className="muted">current_stock View · LOT 기준 실시간</span>}
-      />
-      <div className="stat-grid stat-grid--5">
-        <StatCard label="관리 SKU" value={num(m.skuCount)} unit="종" />
-        <StatCard label="총 재고수량" value={num(m.totalStockQty)} unit="EA" />
-        <StatCard label="재고자산 (원가)" value={wonShort(m.stockAssetValue)} accent />
-        <StatCard label="유통기한 임박" value={num(m.expiringSoonCount)} unit="건" sub="90일 이내" tone="warn" />
-        <StatCard label="안전재고 미달" value={num(m.belowSafetyCount)} unit="종" sub={`품절 ${m.outOfStockCount}종 포함`} tone="danger" />
-      </div>
+    const tabs = [
+        { key: 'product', label: '상품', count: products.length },
+        { key: 'brand', label: '브랜드', count: brands.length },
+        { key: 'vendor', label: '협력사', count: vendors.length },
+        { key: 'warehouse', label: '창고', count: warehouses.length },
+    ];
 
-      <Card className="table-card">
-        <div className="table-head">
-          <span>품목별 현재고</span>
-          <span className="muted">단가는 매입원가 기준</span>
-        </div>
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>브랜드</th><th>상품</th><th>창고 · 지점</th><th>LOT</th>
-                <th className="t-right">현재고</th><th className="t-right">안전재고</th>
-                <th>유통기한</th><th>상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {D.inventory.map((it) => {
-                const ss = stockStatus(it);
-                const es = expireStatus(it);
-                return (
-                  <tr key={it.id}>
-                    <td className="t-brand">{it.brand}</td>
-                    <td><div className="t-name">{it.name}</div><div className="t-sku">{it.sku}</div></td>
-                    <td className="muted">{it.wh}</td>
-                    <td className="mono muted">{it.lot}</td>
-                    <td className="t-right t-stock">{num(it.stock)}</td>
-                    <td className="t-right muted">{num(it.safety)}</td>
-                    <td className="mono">
-                      <span className="exp-date">{it.expire.slice(2)}</span>
-                      {es ? <Badge tone={es.tone}>{es.text}</Badge> : null}
-                    </td>
-                    <td><Badge tone={ss.tone}>{ss.text}</Badge></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </section>
-  );
-}
+    const q = search.trim().toLowerCase();
+    const match = (s) => !q || (s || '').toLowerCase().includes(q);
 
-function SalesSection() {
-  const diff = D.monthRevenue - D.lastMonthRevenue;
-  const diffPct = ((diff / D.lastMonthRevenue) * 100).toFixed(1);
-  const up = diff >= 0;
-  const maxDaily = Math.max(...D.dailySales.map((d) => d.amt));
-  return (
-    <section>
-      <SectionTitle
-        kicker="SALES"
-        title="이번달 매출 요약"
-        right={<span className="muted">{D.monthLabel} · 1~11일 누적 (MTD)</span>}
-      />
-      <div className="stat-grid stat-grid--4">
-        <StatCard
-          label="이번달 매출액" value={wonShort(D.monthRevenue)} accent
-          sub={`${up ? "▲" : "▼"} ${Math.abs(diffPct)}% 전월 동기 대비`}
-          tone={up ? "ok" : "danger"}
-        />
-        <StatCard label="판매 수량" value={num(D.salesQty)} unit="EA" />
-        <StatCard label="공급가액" value={wonShort(D.supplyAmount)} sub="부가세 제외" tone="muted" />
-        <StatCard label="부가세 (10%)" value={wonShort(D.vat)} sub="세금계산서 기준" tone="muted" />
-      </div>
+    const addLabel = {
+        product: '상품 등록', brand: '브랜드 등록',
+        vendor: '협력사 등록', warehouse: '창고 등록',
+    }[tab];
 
-      <div className="sales-grid">
-        <Card>
-          <div className="card-head"><span>일별 매출 추이</span><span className="muted">{D.monthLabel}</span></div>
-          <BarChart data={D.dailySales} max={maxDaily} />
-        </Card>
-        <Card>
-          <div className="card-head"><span>채널별 비중</span></div>
-          <ChannelDonut channels={D.channels} />
-        </Card>
-        <Card className="brand-card">
-          <div className="card-head"><span>브랜드별 매출 TOP</span><span className="muted">이번달 누적</span></div>
-          <HBars data={D.brandSales} />
-        </Card>
-      </div>
-    </section>
-  );
-}
+    const placeholder = {
+        product: '상품명 · 품번 검색', brand: '브랜드명 검색',
+        vendor: '협력사명 검색', warehouse: '창고명 검색',
+    }[tab];
 
-export default function Dashboard() {
-  return <><InventorySection /><SalesSection /></>;
+    const saveVendor = async (row) => {
+        const res = await api.post('/api/vendors', row);
+        setVendors((v) => [res.data, ...v]);
+        setPopup(null);
+    };
+
+    const saveBrand = async (row) => {
+        const res = await api.post('/api/brands', row);
+        setBrands((b) => [res.data, ...b]);
+        setPopup(null);
+    };
+
+    const saveWarehouse = async (row) => {
+        const res = await api.post('/api/warehouses', {
+            warehouseNm: row.name,
+            warehouseType: row.type,
+            location: row.location,
+            manager: row.manager,
+            phone: row.phone,
+            status: row.status,
+        });
+        setWarehouses((w) => [res.data, ...w]);
+        setPopup(null);
+    };
+
+    const saveProduct = async (row) => {
+        const res = await api.post('/api/products', row);
+        setProducts((p) => [res.data, ...p]);
+        setPopup(null);
+    };
+
+    if (loading) return (
+        <section>
+            <div className="empty" style={{ padding: '80px 0' }}>
+                <div className="empty-title">불러오는 중...</div>
+            </div>
+        </section>
+    );
+
+    return (
+        <section>
+            <div className="page-head">
+                <div>
+                    <div className="section-kicker">MASTER</div>
+                    <h2 className="page-title">상품 관리</h2>
+                    <p className="page-desc">상품 · 브랜드 · 협력사 · 창고 마스터를 관리합니다.</p>
+                </div>
+            </div>
+
+            <Tabs tabs={tabs} value={tab} onChange={setTab} />
+
+            <Toolbar
+                search={search}
+                onSearch={setSearch}
+                placeholder={placeholder}
+                action={<Button onClick={() => setPopup(tab)}>+ {addLabel}</Button>}
+            />
+
+            <div className="card table-card">
+
+                {/* ── 상품 ── */}
+                {tab === 'product' && (
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th style={{ width: '200px' }}>상품명 / 품번</th>
+                                <th style={{ width: '100px' }}>브랜드</th>
+                                <th style={{ width: '120px' }}>협력사</th>
+                                <th className="t-right" style={{ width: '100px' }}>소비자가</th>
+                                <th className="t-right" style={{ width: '100px' }}>매입원가</th>
+                                <th className="t-right" style={{ width: '100px' }}>공급원가</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {products
+                                .filter((p) => match(p.productNmKo) || match(p.productNo))
+                                .map((p) => {
+                                    // 코드 → 한글명 매핑
+                                    const brandNm = brands.find((b) => b.brandCd === p.brandCd)?.brandNm ?? p.brandCd;
+                                    const vendorNm = vendors.find((v) => v.vendorCd === p.vendorCd)?.vendorNm ?? p.vendorCd;
+                                    return (
+                                        <tr key={p.productNo}>
+                                            <td>
+                                                <div className="t-name">{p.productNmKo}</div>
+                                                <div className="t-sku">{p.productNo}</div>
+                                            </td>
+                                            <td className="t-brand">{brandNm}</td>
+                                            <td className="muted">{vendorNm}</td>
+                                            <td className="t-right mono">{won(p.retailPrice ?? 0)}</td>
+                                            <td className="t-right mono">{won(p.costPrice ?? 0)}</td>
+                                            <td className="t-right mono">{won(p.supplyCost ?? 0)}</td>
+                                        </tr>
+                                    );
+                                })}
+                        </tbody>
+                    </table>
+                )}
+
+                {/* ── 브랜드 ── */}
+                {tab === 'brand' && (
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th style={{ width: '200px' }}>브랜드명 / 코드</th>
+                                <th style={{ width: '150px' }}>협력사</th>
+                                <th style={{ width: '100px' }}>유형</th>
+                                <th className="t-right" style={{ width: '100px' }}>공급률</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {brands
+                                .filter((b) => match(b.brandNm) || match(b.brandCd))
+                                .map((b) => {
+                                    const vendorNm = vendors.find((v) => v.vendorCd === b.vendorCd)?.vendorNm ?? b.vendorCd;
+                                    return (
+                                        <tr key={b.brandCd}>
+                                            <td>
+                                                <div className="t-name">{b.brandNm}</div>
+                                                <div className="t-sku">{b.brandCd}</div>
+                                            </td>
+                                            <td className="muted">{vendorNm}</td>
+                                            <td>
+                                                <Badge tone={b.brandType === 'IMPORT' ? 'warn' : 'ok'}>
+                                                    {b.brandType === 'IMPORT' ? '수입' : '국산'}
+                                                </Badge>
+                                            </td>
+                                            <td className="t-right mono">
+                                                {b.supplyRate != null ? b.supplyRate + '%' : '—'}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                        </tbody>
+                    </table>
+                )}
+
+                {/* ── 협력사 ── */}
+                {tab === 'vendor' && (
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th style={{ width: '200px' }}>협력사명 / 코드</th>
+                                <th style={{ width: '100px' }}>브랜드 수</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {vendors
+                                .filter((v) => match(v.vendorNm) || match(v.vendorCd))
+                                .map((v) => {
+                                    const brandCount = brands.filter((b) => b.vendorCd === v.vendorCd).length;
+                                    return (
+                                        <tr key={v.vendorCd}>
+                                            <td>
+                                                <div className="t-name">{v.vendorNm}</div>
+                                                <div className="t-sku">{v.vendorCd}</div>
+                                            </td>
+                                            <td className="muted">{brandCount}개</td>
+                                        </tr>
+                                    );
+                                })}
+                        </tbody>
+                    </table>
+                )}
+
+                {/* ── 창고 ── */}
+                {tab === 'warehouse' && (
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th style={{ width: '180px' }}>창고명</th>
+                                <th style={{ width: '80px' }}>유형</th>
+                                <th style={{ width: '200px' }}>위치</th>
+                                <th style={{ width: '100px' }}>담당자</th>
+                                <th style={{ width: '130px' }}>연락처</th>
+                                <th style={{ width: '80px' }}>상태</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {warehouses
+                                .filter((w) => match(w.warehouseNm))
+                                .map((w) => (
+                                    <tr key={w.warehouseId}>
+                                        <td className="t-brand">{w.warehouseNm}</td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            <Badge tone="neutral">{w.warehouseType ?? '-'}</Badge>
+                                        </td>
+                                        <td className="muted t-note">{w.location ?? '-'}</td>
+                                        <td style={{ textAlign: 'center' }}>{w.manager ?? '-'}</td>
+                                        <td className="mono muted" style={{ textAlign: 'center' }}>{w.phone ?? '-'}</td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            <StatusPill tone={w.status === '사용중' ? 'ok' : 'danger'}>
+                                                {w.status ?? '사용중'}
+                                            </StatusPill>
+                                        </td>
+                                    </tr>
+                                ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+
+            {popup === 'product' && (
+                <ProductRegisterPopup
+                    brands={brands}
+                    vendors={vendors}
+                    nextSku={genCode('SKU-', products, 'productNo')}
+                    onClose={() => setPopup(null)}
+                    onSave={saveProduct}
+                />
+            )}
+            {popup === 'brand' && (
+                <BrandRegisterPopup
+                    vendors={vendors}
+                    onClose={() => setPopup(null)}
+                    onSave={saveBrand}
+                />
+            )}
+            {popup === 'vendor' && (
+                <VendorRegisterPopup
+                    onClose={() => setPopup(null)}
+                    onSave={saveVendor}
+                />
+            )}
+            {popup === 'warehouse' && (
+                <WarehouseRegisterPopup
+                    nextCode={genCode('WH-', warehouses, 'warehouseId')}
+                    onClose={() => setPopup(null)}
+                    onSave={saveWarehouse}
+                />
+            )}
+        </section>
+    );
 }

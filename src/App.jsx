@@ -4,25 +4,26 @@ import Dashboard from './pages/Dashboard';
 import Product from './pages/Product';
 import Inventory from './pages/Inventory';
 import Settlement from './pages/Settlement';
+import Login from './pages/Login';
 
 const D = ERP_DATA;
 
 const NAV = [
   { key: "dashboard", label: "대시보드" },
-  { key: "product",   label: "상품" },
-  { key: "po",        label: "발주 · 입고" },
+  { key: "product", label: "상품" },
+  { key: "po", label: "발주 · 입고" },
   { key: "inventory", label: "재고 수불" },
-  { key: "sales",     label: "판매" },
+  { key: "sales", label: "판매" },
   { key: "settlement", label: "정산" },
 ];
 
 const PAGE_META = {
-  dashboard:  { title: "대시보드",    desc: "면세점 통합 운영 현황" },
-  product:    { title: "상품 관리",   desc: "협력사 · 브랜드 · 상품 마스터" },
-  po:         { title: "발주 · 입고", desc: "구매 발주 및 입고 처리" },
-  inventory:  { title: "재고 수불",   desc: "입출고 이력 관리" },
-  sales:      { title: "판매",        desc: "온 · 오프라인 채널 판매" },
-  settlement: { title: "정산",        desc: "월별 협력사 정산" },
+  dashboard: { title: "대시보드", desc: "면세점 통합 운영 현황" },
+  product: { title: "상품 관리", desc: "상품 · 협력사 · 창고 마스터" },
+  po: { title: "발주 · 입고", desc: "구매 발주 및 입고 처리" },
+  inventory: { title: "재고 수불", desc: "입출고 이력 관리" },
+  sales: { title: "판매", desc: "온 · 오프라인 채널 판매" },
+  settlement: { title: "정산", desc: "월별 협력사 정산" },
 };
 
 function LogoMark() {
@@ -34,7 +35,7 @@ function LogoMark() {
   );
 }
 
-function Sidebar({ active, onNavigate }) {
+function Sidebar({ active, onNavigate, onLogout, user }) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -57,12 +58,13 @@ function Sidebar({ active, onNavigate }) {
       </nav>
       <div className="sidebar-foot">
         <div className="foot-user">
-          <div className="foot-avatar">우</div>
+          <div className="foot-avatar">{user?.name?.[0] ?? '?'}</div>
           <div>
-            <div className="foot-name">MD · 우영</div>
+            <div className="foot-name">MD · {user?.name}</div>
             <div className="foot-role">재고 · SCM 관리자</div>
           </div>
         </div>
+        <button className="logout-btn" onClick={onLogout} title="로그아웃">↩</button>
       </div>
     </aside>
   );
@@ -81,12 +83,24 @@ function ComingSoon({ name }) {
 }
 
 export default function App() {
-  const [page, setPage] = useState("dashboard");
+  const [page, setPage] = useState('dashboard');
+  const [user, setUser] = useState(() => {
+    const token = localStorage.getItem('token');
+    const name = localStorage.getItem('name');
+    const role = localStorage.getItem('role');
+    return token ? { token, name, role } : null;
+  });
+
   const meta = PAGE_META[page];
+
+  const handleLogin = (data) => setUser(data);
+  const handleLogout = () => { localStorage.clear(); setUser(null); };
+
+  if (!user) return <Login onLogin={handleLogin} />;
 
   return (
     <div className="layout">
-      <Sidebar active={page} onNavigate={setPage} />
+      <Sidebar active={page} onNavigate={setPage} onLogout={handleLogout} user={user} />
       <main className="main">
         <header className="topbar">
           <div>
@@ -101,12 +115,12 @@ export default function App() {
           </div>
         </header>
         <div className="content">
-          {page === "dashboard"  && <Dashboard />}
-          {page === "product"    && <Product />}
-          {page === "inventory"  && <Inventory />}
+          {page === "dashboard" && <Dashboard />}
+          {page === "product" && <Product />}
+          {page === "inventory" && <Inventory />}
           {page === "settlement" && <Settlement />}
-          {page === "po"         && <ComingSoon name="발주 · 입고" />}
-          {page === "sales"      && <ComingSoon name="판매" />}
+          {page === "po" && <ComingSoon name="발주 · 입고" />}
+          {page === "sales" && <ComingSoon name="판매" />}
         </div>
       </main>
     </div>

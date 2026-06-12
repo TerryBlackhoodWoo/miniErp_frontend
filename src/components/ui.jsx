@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 // 원화 포맷
 export const won = (n) => "₩" + Math.round(n).toLocaleString("ko-KR");
@@ -131,12 +131,12 @@ export function Toolbar({ search, onSearch, placeholder, action }) {
   );
 }
 
-export function Modal({ title, onClose, children, footer }) {
+export function Modal({ title, subtitle, onClose, children, footer, wide }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className={"modal" + (wide ? " modal--wide" : "")} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <h3>{title}</h3>
+          <div className="modal-head-titles"><h3>{title}</h3>{subtitle ? <span className="modal-sub">{subtitle}</span> : null}</div>
           <button className="modal-x" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">{children}</div>
@@ -146,17 +146,76 @@ export function Modal({ title, onClose, children, footer }) {
   );
 }
 
-export function Field({ label, children, required }) {
+export function Field({ label, children, required, full }) {
   return (
-    <label className="field">
-      <span className="field-label">{label}{required ? <i> *</i> : null}</span>
+    <label className={"field" + (full ? " field--full" : "")}>
+      <span className="field-label">{label}{required ? <i className="req"> *</i> : null}</span>
       {children}
     </label>
   );
 }
 
-export function TextInput(props) { return <input className="input" {...props} />; }
-export function Select({ children, ...props }) { return <select className="input" {...props}>{children}</select>; }
+export function TextInput({ className = "", ...props }) { return <input className={"input " + className} {...props} />; }
+export function Select({ className = "", children, ...props }) { return <select className={"input " + className} {...props}>{children}</select>; }
+export function Textarea({ className = "", ...props }) { return <textarea className={"input " + className} {...props} />; }
+
+export function Radio({ name, value, current, onChange, children }) {
+  const on = value === current;
+  return (
+    <label className={"radio" + (on ? " is-on" : "")}>
+      <input type="radio" name={name} checked={on} onChange={() => onChange(value)} />
+      <span className="rdot" />{children}
+    </label>
+  );
+}
+
+export function RadioGroup({ name, value, onChange, options }) {
+  return (
+    <div className="radio-group">
+      {options.map((o) => (
+        <Radio key={o.value} name={name} value={o.value} current={value} onChange={onChange}>{o.label}</Radio>
+      ))}
+    </div>
+  );
+}
+
+export function Checkbox({ checked, onChange, children }) {
+  return (
+    <label className={"checkbox" + (checked ? " is-on" : "")}>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span className="cbox">{checked ? "✓" : ""}</span>{children}
+    </label>
+  );
+}
+
+export function MoneyInput({ value, onChange, placeholder }) {
+  const fmt = (v) => (v === "" || v == null ? "" : Number(String(v).replace(/[^\d]/g, "")).toLocaleString("ko-KR"));
+  return (
+    <div className="money">
+      <input className="input" inputMode="numeric" value={fmt(value)} placeholder={placeholder || "0"}
+        onChange={(e) => onChange(e.target.value.replace(/[^\d]/g, ""))} />
+      <span className="money-suffix">원</span>
+    </div>
+  );
+}
+
+export function ImageBox() {
+  const [url, setUrl] = useState(null);
+  const inputRef = useRef(null);
+  return (
+    <div className="img-box">
+      <div className={"img-box-frame" + (url ? " has-img" : "")}>
+        {url ? <img src={url} alt="상품 이미지" /> : (<><span className="cam">▣</span><span className="img-box-label">NO IMAGE</span></>)}
+      </div>
+      <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
+        onChange={(e) => { const file = e.target.files[0]; if (file) setUrl(URL.createObjectURL(file)); }} />
+      <div className="img-box-actions">
+        <button type="button" className="mini-btn" onClick={() => inputRef.current.click()}>이미지등록</button>
+        <button type="button" className="mini-btn mini-btn--ghost" onClick={() => setUrl(null)}>삭제</button>
+      </div>
+    </div>
+  );
+}
 
 export function EmptyState({ title, desc }) {
   return (
