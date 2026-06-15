@@ -5,6 +5,7 @@ import MasterData from './pages/MasterData';
 import Inventory from './pages/Inventory';
 import Settlement from './pages/Settlement';
 import Login from './pages/Login';
+import PurchaseOrder from './pages/PurchaseOrder';
 
 const D = ERP_DATA;
 
@@ -122,6 +123,7 @@ export default function App() {
           {page === "settlement" && <Settlement />}
           {page === "po" && <ComingSoon name="발주 · 입고" />}
           {page === "sales" && <ComingSoon name="판매" />}
+          {page === "po" && <PurchaseOrder />}
         </div>
       </main>
     </div>
