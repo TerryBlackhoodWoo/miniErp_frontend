@@ -42,6 +42,7 @@ export function ReceivePopup({ order, onClose, onSave }) {
             </div>
             <p className="aside-hint" style={{ marginTop: 8 }}>
                 박스/파레트 수, 물류비는 상품의 입수단위 및 창고 파레트단가를 기준으로 자동 계산됩니다.
+                입고 처리 후에는 "배분 대기" 목록에서 지점으로 배분 승인할 수 있습니다.
             </p>
         </Modal>
     );

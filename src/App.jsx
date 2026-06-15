@@ -121,7 +121,6 @@ export default function App() {
           {page === "master" && <MasterData />}
           {page === "inventory" && <Inventory />}
           {page === "settlement" && <Settlement />}
-          {page === "po" && <ComingSoon name="발주 · 입고" />}
           {page === "sales" && <ComingSoon name="판매" />}
           {page === "po" && <PurchaseOrder />}
         </div>

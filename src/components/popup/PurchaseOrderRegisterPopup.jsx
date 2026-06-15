@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Field, Select, TextInput, Checkbox } from '../ui';
+import { Modal, Field, Select, TextInput } from '../ui';
 import { PopupFooter } from '../shared';
 
 export function PurchaseOrderRegisterPopup({ products, stores, warehouses, onClose, onSave }) {
@@ -8,7 +8,6 @@ export function PurchaseOrderRegisterPopup({ products, stores, warehouses, onClo
         warehouseId: warehouses[0]?.warehouseId ?? '',
         productNo: products[0]?.productNo ?? '',
         orderQty: '',
-        isDirect: false,
     });
     const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
 
@@ -21,7 +20,6 @@ export function PurchaseOrderRegisterPopup({ products, stores, warehouses, onClo
             brandCd: product?.brandCd,
             vendorCd: product?.vendorCd,
             orderQty: Number(f.orderQty) || 0,
-            isDirect: f.isDirect,
         });
     };
 
@@ -34,15 +32,10 @@ export function PurchaseOrderRegisterPopup({ products, stores, warehouses, onClo
                         {stores.map((s) => <option key={s.storeId} value={s.storeId}>{s.storeNm}</option>)}
                     </Select>
                 </Field>
-                <Field label="입고 창고" required>
+                <Field label="경유 창고" required>
                     <Select value={f.warehouseId} onChange={(e) => set('warehouseId', e.target.value)}>
                         {warehouses.map((w) => <option key={w.warehouseId} value={w.warehouseId}>{w.warehouseNm}</option>)}
                     </Select>
-                </Field>
-                <Field label="" full>
-                    <Checkbox checked={f.isDirect} onChange={(v) => set('isDirect', v)}>
-                        직배송 (창고 경유 기록 자동 생성)
-                    </Checkbox>
                 </Field>
                 <Field label="상품" required full>
                     <Select value={f.productNo} onChange={(e) => set('productNo', e.target.value)}>

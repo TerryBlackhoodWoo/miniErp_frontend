@@ -1,25 +1,23 @@
-import { won, num, Badge, StatusPill, Button } from '../../components/ui';
-import { PurchaseOrderRegisterPopup, ReceivePopup } from '../../components';
+import { won, num, Badge, StatusPill } from '../../components/ui';
+import { PurchaseOrderRegisterPopup } from '../../components';
 import api from '../../api/axios';
+
+const STATUS_LABEL = {
+    PENDING: { label: '입고대기', tone: 'warn' },
+    RECEIVED: { label: '배분대기', tone: 'info' },
+    COMPLETED: { label: '완료', tone: 'ok' },
+};
 
 export default function PurchaseOrderTab({
     orders, setOrders, products, stores, warehouses,
-    popup, setPopup, receiveTarget, setReceiveTarget,
+    popup, setPopup,
 }) {
     const isCreateOpen = popup === 'create';
-    const isReceiveOpen = popup === 'receive';
-
-    const closePopup = () => { setPopup(null); setReceiveTarget(null); };
+    const closePopup = () => setPopup(null);
 
     const create = async (row) => {
         const res = await api.post('/api/purchase-orders', row);
         setOrders((o) => [res.data, ...o]);
-        closePopup();
-    };
-
-    const receive = async (orderId, body) => {
-        const res = await api.post(`/api/purchase-orders/${orderId}/receive`, body);
-        setOrders((os) => os.map((o) => o.orderId === res.data.orderId ? res.data : o));
         closePopup();
     };
 
@@ -41,7 +39,6 @@ export default function PurchaseOrderTab({
                         <th className="t-right" style={{ width: '70px' }}>파레트</th>
                         <th className="t-right" style={{ width: '90px' }}>물류비</th>
                         <th style={{ width: '90px' }}>상태</th>
-                        <th style={{ width: '90px' }}></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,7 +46,7 @@ export default function PurchaseOrderTab({
                         const product = findName(products, 'productNo', o.productNo);
                         const store = findName(stores, 'storeId', o.storeId);
                         const warehouse = findName(warehouses, 'warehouseId', o.warehouseId);
-                        const isPending = o.status === 'PENDING';
+                        const statusInfo = STATUS_LABEL[o.status] ?? { label: o.status, tone: 'muted' };
                         return (
                             <tr key={o.orderId}>
                                 <td className="mono muted" style={{ textAlign: 'center' }}>{o.orderId}</td>
@@ -66,24 +63,14 @@ export default function PurchaseOrderTab({
                                 <td className="t-right mono">{o.palletCount ?? '—'}</td>
                                 <td className="t-right mono">{o.logisticsCost != null ? won(o.logisticsCost) : '—'}</td>
                                 <td style={{ textAlign: 'center' }}>
-                                    <StatusPill tone={isPending ? 'warn' : 'ok'}>
-                                        {isPending ? '입고대기' : '입고완료'}
-                                    </StatusPill>
-                                </td>
-                                <td style={{ textAlign: 'center' }}>
-                                    {isPending && (
-                                        <Button variant="ghost" onClick={() => { setReceiveTarget(o); setPopup('receive'); }}>
-                                            입고처리
-                                        </Button>
-                                    )}
-                                </td>
-                                <td className="muted">
-                                    {warehouse?.warehouseNm ?? '-'}
-                                    {o.isDirect && <Badge tone="warn" style={{ marginLeft: 6 }}>직배송</Badge>}
+                                    <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
                                 </td>
                             </tr>
                         );
                     })}
+                    {orders.length === 0 && (
+                        <tr><td colSpan="11"><div className="empty"><div className="empty-mark" /><div className="empty-title">등록된 발주가 없습니다.</div></div></td></tr>
+                    )}
                 </tbody>
             </table>
 
@@ -92,13 +79,6 @@ export default function PurchaseOrderTab({
                     products={products} stores={stores} warehouses={warehouses}
                     onClose={closePopup}
                     onSave={create}
-                />
-            )}
-            {isReceiveOpen && receiveTarget && (
-                <ReceivePopup
-                    order={receiveTarget}
-                    onClose={closePopup}
-                    onSave={receive}
                 />
             )}
         </>
