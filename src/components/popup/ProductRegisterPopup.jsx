@@ -1,34 +1,70 @@
-export function ProductRegisterPopup({ brands, vendors, nextSku, onClose, onSave }) {
+import { useState } from 'react';
+import { Modal, Field, TextInput, Select, RadioGroup, Checkbox, MoneyInput, ImageBox } from '../../components/ui';
+import { PopupFooter } from '../shared';
+import api from '../../api/axios';
+
+export function ProductRegisterPopup({ brands, vendors, nextSku, initialData, onClose, onSave }) {
+    const isEdit = !!initialData;
+    const [imageFile, setImageFile] = useState(null);
     const [f, setF] = useState({
-        brand: brands[0]?.brandCd ?? '',
-        name: '', sku: nextSku, barcode: '', capacity: '', unit: 'EA',
-        vendor: vendors[0]?.vendorCd ?? '',
-        taxFree: true, vatIncluded: true,
-        cost: '', retail: '', supplyCost: '', mfgCost: '',
-        qtyPerBox: '', boxPerPallet: '',
+        brand: initialData?.brandCd ?? brands[0]?.brandCd ?? '',
+        name: initialData?.productNmKo ?? '',
+        sku: initialData?.productNo ?? nextSku,
+        barcode: initialData?.barcode ?? '',
+        capacity: initialData?.capacity ?? '',
+        unit: initialData?.unit ?? 'EA',
+        vendor: initialData?.vendorCd ?? vendors[0]?.vendorCd ?? '',
+        taxFree: initialData?.taxFree ?? true,
+        vatIncluded: true,
+        cost: initialData?.costPrice ?? '',
+        retail: initialData?.retailPrice ?? '',
+        supplyCost: initialData?.supplyCost ?? '',
+        mfgCost: initialData?.mfgCost ?? '',
+        qtyPerBox: initialData?.qtyPerBox ?? '',
+        boxPerPallet: initialData?.boxPerPallet ?? '',
         status: '판매중',
     });
     const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
-    const save = () => onSave({
-        productNo: f.sku,
-        brandCd: f.brand,
-        vendorCd: f.vendor,
-        productNmKo: f.name.trim() || '신규 상품',
-        barcode: f.barcode,
-        capacity: Number(f.capacity) || null,
-        unit: f.unit,
-        taxFree: f.taxFree,
-        retailPrice: Number(f.retail) || 0,
-        costPrice: Number(f.cost) || null,
-        supplyCost: Number(f.supplyCost) || null,
-        mfgCost: Number(f.mfgCost) || null,
-        qtyPerBox: Number(f.qtyPerBox) || null,
-        boxPerPallet: Number(f.boxPerPallet) || null,
-    });
+
+    const save = async () => {
+        const payload = {
+            productNo: f.sku,
+            brandCd: f.brand,
+            vendorCd: f.vendor,
+            productNmKo: f.name.trim() || '신규 상품',
+            barcode: f.barcode,
+            capacity: Number(f.capacity) || null,
+            unit: f.unit,
+            taxFree: f.taxFree,
+            retailPrice: Number(f.retail) || 0,
+            costPrice: Number(f.cost) || null,
+            supplyCost: Number(f.supplyCost) || null,
+            mfgCost: Number(f.mfgCost) || null,
+            qtyPerBox: Number(f.qtyPerBox) || null,
+            boxPerPallet: Number(f.boxPerPallet) || null,
+        };
+
+        // 1. 상품 저장 (등록 or 수정)
+        const saved = await onSave(payload);
+        const productNo = saved?.productNo ?? payload.productNo;
+
+        // 2. 이미지가 선택됐으면 업로드
+        if (imageFile) {
+            const formData = new FormData();
+            formData.append('file', imageFile);
+            await api.post(`/api/products/${productNo}/image`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+        }
+    };
 
     return (
-        <Modal title="상품 등록" subtitle="신규 상품을 마스터에 등록합니다" wide onClose={onClose}
-            footer={<PopupFooter onClose={onClose} onSave={save} />}>
+        <Modal
+            title={isEdit ? '상품 수정' : '상품 등록'}
+            subtitle={isEdit ? '상품 정보를 수정합니다' : '신규 상품을 마스터에 등록합니다'}
+            wide onClose={onClose}
+            footer={<PopupFooter onClose={onClose} onSave={save} saveLabel={isEdit ? '수정' : '저장'} />}
+        >
             <div className="popup-2col">
                 <div className="form-grid">
                     <Field label="브랜드">
@@ -49,8 +85,8 @@ export function ProductRegisterPopup({ brands, vendors, nextSku, onClose, onSave
 
                     <Field label="품번 (SKU)">
                         <div className="input-with-tag">
-                            <TextInput value={f.sku} onChange={(e) => set('sku', e.target.value)} />
-                            <span className="auto-tag">자동</span>
+                            <TextInput value={f.sku} onChange={(e) => set('sku', e.target.value)} disabled={isEdit} />
+                            <span className="auto-tag">{isEdit ? 'PK' : '자동'}</span>
                         </div>
                     </Field>
                     <Field label="바코드">
@@ -104,7 +140,7 @@ export function ProductRegisterPopup({ brands, vendors, nextSku, onClose, onSave
 
                 <div className="popup-aside">
                     <span className="aside-label">상품 이미지</span>
-                    <ImageBox />
+                    <ImageBox value={initialData?.imageUrl} onFileSelect={setImageFile} />
                     <p className="aside-hint">권장 1:1 비율 · JPG/PNG</p>
                 </div>
             </div>

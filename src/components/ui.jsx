@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 // 원화 포맷
 export const won = (n) => "₩" + Math.round(n).toLocaleString("ko-KR");
@@ -199,34 +199,40 @@ export function MoneyInput({ value, onChange, placeholder }) {
   );
 }
 
-export function ImageBox() {
-  const [url, setUrl] = useState(null);
+export function ImageBox({ value, onFileSelect, productNo }) {
+  const [preview, setPreview] = useState(value || null);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    setPreview(value || null);
+  }, [value]);
+
+  const handleFile = (file) => {
+    if (!file) return;
+    setPreview(URL.createObjectURL(file));
+    onFileSelect?.(file);
+  };
+
+  const imgSrc = preview?.startsWith('blob:')
+    ? preview
+    : preview
+      ? `http://localhost:8080${preview}`
+      : null;
+
   return (
     <div className="img-box">
-      <div className={"img-box-frame" + (url ? " has-img" : "")}>
-        {url ? <img src={url} alt="상품 이미지" /> : (<><span className="cam">▣</span><span className="img-box-label">NO IMAGE</span></>)}
+      <div className={"img-box-frame" + (imgSrc ? " has-img" : "")}>
+        {imgSrc ? <img src={imgSrc} alt="상품 이미지" /> : (<><span className="cam">▣</span><span className="img-box-label">NO IMAGE</span></>)}
       </div>
       <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
-        onChange={(e) => { const file = e.target.files[0]; if (file) setUrl(URL.createObjectURL(file)); }} />
+        onChange={(e) => handleFile(e.target.files[0])} />
       <div className="img-box-actions">
         <button type="button" className="mini-btn" onClick={() => inputRef.current.click()}>이미지등록</button>
-        <button type="button" className="mini-btn mini-btn--ghost" onClick={() => setUrl(null)}>삭제</button>
+        <button type="button" className="mini-btn mini-btn--ghost" onClick={() => { setPreview(null); onFileSelect?.(null); }}>삭제</button>
       </div>
     </div>
   );
 }
-
-export function EmptyState({ title, desc }) {
-  return (
-    <div className="empty">
-      <div className="empty-mark" />
-      <div className="empty-title">{title}</div>
-      {desc ? <div className="empty-desc">{desc}</div> : null}
-    </div>
-  );
-}
-
 export function StatusPill({ tone, children }) {
   return <span className={"status-pill status-pill--" + tone}><span className="sp-dot" />{children}</span>;
 }
