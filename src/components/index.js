@@ -6,3 +6,4 @@ export * from './popup/WarehouseRegisterPopup';
 export * from './popup/StoreRegisterPopup';
 export * from './popup/PurchaseOrderRegisterPopup';
 export * from './popup/ReceivePopup';
+export { SalesRegisterPopup } from './popup/SalesRegisterPopup';
