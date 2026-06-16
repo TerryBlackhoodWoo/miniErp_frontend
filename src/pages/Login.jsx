@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 
 export default function Login({ onLogin }) {
   const [form, setForm] = useState({ username: '', password: '' });
@@ -16,7 +16,7 @@ export default function Login({ onLogin }) {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.post('http://localhost:8080/api/auth/login', form);
+      const res = await api.post('/api/auth/login', form);
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('name', res.data.name);
       localStorage.setItem('role', res.data.role);
@@ -52,6 +52,7 @@ export default function Login({ onLogin }) {
               onChange={(e) => set('username', e.target.value)}
               onKeyDown={onKeyDown}
               placeholder="아이디 입력"
+              autoComplete="username"
               autoFocus
             />
           </label>
@@ -65,6 +66,7 @@ export default function Login({ onLogin }) {
               onChange={(e) => set('password', e.target.value)}
               onKeyDown={onKeyDown}
               placeholder="비밀번호 입력"
+              autoComplete="current-password"
             />
           </label>
 
