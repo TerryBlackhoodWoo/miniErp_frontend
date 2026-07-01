@@ -1582,3 +1582,70 @@ textarea.input {
 .logout-btn:hover {
   color: var(--danger);
 }
+
+/* 필수 입력 칸 강조 */
+.field:has(.req) .input {
+  background: #fdf3f3;
+  border-color: var(--primary-100);
+}
+
+/* ── 로그인 하단 회원가입 링크 (v1.1.0) ── */
+.login-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.login-foot-text {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.login-link {
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.login-link:hover {
+  color: var(--primary-700);
+}
+
+/* ── 회원가입 뒤로가기 ── */
+.login-back {
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-2);
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: -4px;
+  transition: color .12s;
+}
+
+.login-back:hover {
+  color: var(--primary);
+}
+
+/* ── 가입 성공 메시지 ── */
+.login-success {
+  font-size: 13px;
+  color: var(--ok);
+  background: #e8f5ee;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
