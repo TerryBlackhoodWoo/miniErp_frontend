@@ -213,10 +213,11 @@ export function ImageBox({ value, onFileSelect, productNo }) {
     onFileSelect?.(file);
   };
 
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
   const imgSrc = preview?.startsWith('blob:')
     ? preview
     : preview
-      ? `http://localhost:8080${preview}`
+      ? `${baseUrl}${preview}`
       : null;
 
   return (
