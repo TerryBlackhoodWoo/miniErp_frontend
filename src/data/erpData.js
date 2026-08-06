@@ -119,30 +119,11 @@ const inTotal = ledger.filter((r) => r.qty > 0).reduce((s, r) => s + r.qty, 0);
 const outTotal = ledger.filter((r) => r.qty < 0).reduce((s, r) => s + Math.abs(r.qty), 0);
 const ledgerSummary = { open: openTotal, in: inTotal, out: outTotal, close: openTotal + inTotal - outTotal };
 
-const mkSettle = (id, month, vendor, sales, rate, commRate, status) => {
-  const supply = Math.round(sales / 1.1);
-  const vat = sales - supply;
-  const commission = Math.round(supply * commRate);
-  const payout = supply - commission;
-  return { id, month, vendor, sales, supply, vat, commission, payout, status };
-};
-const settlements = [
-  mkSettle(1, "2026-05", "아모레퍼시픽", 28400000, 0.55, 0.12, "마감"),
-  mkSettle(2, "2026-05", "에스티로더컴퍼니즈", 19800000, 0.5, 0.15, "마감"),
-  mkSettle(3, "2026-05", "로레알코리아", 14200000, 0.52, 0.14, "마감"),
-  mkSettle(4, "2026-05", "LG생활건강", 9600000, 0.6, 0.10, "마감"),
-  mkSettle(5, "2026-05", "P&G프레스티지", 7300000, 0.58, 0.10, "마감"),
-  mkSettle(6, "2026-06", "아모레퍼시픽", 12100000, 0.55, 0.12, "진행중"),
-  mkSettle(7, "2026-06", "에스티로더컴퍼니즈", 8900000, 0.5, 0.15, "진행중"),
-  mkSettle(8, "2026-06", "로레알코리아", 6400000, 0.52, 0.14, "진행중"),
-];
-const settleRecon = { month: "2026-05", openStock: 246300000, inbound: 88200000, outbound: 71500000, closeStock: 263000000 };
-
 const ERP_DATA = {
   today,
   monthLabel: "2026년 6월",
   inventory, vendors, brands, products,
-  ledger, ledgerSummary, settlements, settleRecon,
+  ledger, ledgerSummary,
   dailySales, channels, brandSales,
   monthRevenue, lastMonthRevenue, salesQty, supplyAmount, vat,
   metrics: {
