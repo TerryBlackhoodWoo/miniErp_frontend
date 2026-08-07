@@ -89,7 +89,9 @@ export default function Login({ onLogin }) {
 
         {/* 브랜드 헤더 */}
         <div className="login-brand">
-          <div className="brand-mark">m</div>
+          <div className="brand-mark">
+            <img src="/brand-logo.svg" alt="miniERP" />
+          </div>
           <div className="brand-text">
             <div className="brand-name">miniERP</div>
             <div className="brand-sub">면세점 운영 시스템</div>
